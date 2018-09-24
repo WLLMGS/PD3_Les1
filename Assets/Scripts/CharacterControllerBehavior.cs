@@ -6,9 +6,13 @@ using UnityEngine.Assertions;
 [RequireComponent(typeof(CharacterController))]
 public class CharacterControllerBehavior : MonoBehaviour {
 
+	[SerializeField] private Transform _absoluteTransform;
+
 	private CharacterController _charController;
 
-	
+	private Vector3 _velocity = new Vector3();
+	private Vector3 _input = new Vector3();
+
 	void Start ()
 	 { 
 		_charController = GetComponent<CharacterController>();
@@ -21,13 +25,41 @@ public class CharacterControllerBehavior : MonoBehaviour {
 		#endif
 	 }
 	
-	void Update ()
+	void Update()
+	{
+		_input.x = Input.GetAxis("Horizontal");
+		
+		_input.z = Input.GetAxis("Vertical");
+		
+	}
+
+	void FixedUpdate ()
+	{
+		ApplyGround();
+		ApplyGravity();
+		DoMovement();
+	}
+
+	void ApplyGround()
+	{
+		if(_charController.isGrounded)
+		{
+			_velocity -= Vector3.Project(_velocity, Physics.gravity);
+		}
+	}
+	void ApplyGravity()
+	{
+		if(!_charController.isGrounded)	_velocity += Physics.gravity * Time.fixedDeltaTime;
+	}
+	void DoMovement()
+	{
+		Vector3 displacement = _velocity * Time.fixedDeltaTime;
+		_charController.Move(displacement);
+	}
+
+	void ApplyMovement()
 	{
 		
 	}
 
-	void HandleMovement()
-	{
-		
-	}
 }
