@@ -1,16 +1,33 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
+[RequireComponent(typeof(CharacterController))]
 public class CharacterControllerBehavior : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
+	private CharacterController _charController;
+
+	
+	void Start ()
+	 { 
+		_charController = GetComponent<CharacterController>();
+		// 	_charController = (CharacterController)GetComponent(typeof(CharacterController));
+		// 	_charController = (CharacterController)GetComponent("CharacterController");
+
+		#if DEBUG
+		//Debug.Assert((_charController == null), "there is no character controller on the player");
+		Assert.IsNotNull(_charController, "DEPENDENCY ERROR: chararacter controller is null in CharacterControllerBehavior");
+		#endif
+	 }
+	
+	void Update ()
+	{
 		
 	}
-	
-	// Update is called once per frame
-	void Update () {
+
+	void HandleMovement()
+	{
 		
 	}
 }
