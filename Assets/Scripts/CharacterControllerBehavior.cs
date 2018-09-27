@@ -7,17 +7,27 @@ using UnityEngine.Assertions;
 public class CharacterControllerBehavior : MonoBehaviour {
 
 	[SerializeField] private Transform _absoluteTransform;
+	[SerializeField] private float _mass = 75.0f;
+	[SerializeField] private float _acceleration = 3;
+	[SerializeField] private float _dragGround = 5.0f;
+
+	private float _maxRunningSpeed = (30.0f * 1000.0f) /( 60 * 60); //30 km / h
+	
 
 	private CharacterController _charController;
 
 	private Vector3 _velocity = new Vector3();
 	private Vector3 _input = new Vector3();
 
+	private bool _jump = false;
+	private float _jumpHeight = 5.0f;
+
 	void Start ()
 	 { 
 		_charController = GetComponent<CharacterController>();
 		// 	_charController = (CharacterController)GetComponent(typeof(CharacterController));
 		// 	_charController = (CharacterController)GetComponent("CharacterController");
+		_absoluteTransform = Camera.main.transform;
 
 		#if DEBUG
 		//Debug.Assert((_charController == null), "there is no character controller on the player");
@@ -30,14 +40,20 @@ public class CharacterControllerBehavior : MonoBehaviour {
 		_input.x = Input.GetAxis("Horizontal");
 		
 		_input.z = Input.GetAxis("Vertical");
-		
+
+		if(Input.GetKeyDown(KeyCode.Space) && _charController.isGrounded) _jump = true;
 	}
 
 	void FixedUpdate ()
-	{
+	{	
 		ApplyGround();
 		ApplyGravity();
 		DoMovement();
+		ApplyJump();
+		LimitMaximumRunningSpeed();
+		ApplyMovement();
+		ApplyGroundDrag();
+		//apply jump drag
 	}
 
 	void ApplyGround()
@@ -53,13 +69,50 @@ public class CharacterControllerBehavior : MonoBehaviour {
 	}
 	void DoMovement()
 	{
-		Vector3 displacement = _velocity * Time.fixedDeltaTime;
-		_charController.Move(displacement);
+		if(_charController.isGrounded)
+		{
+			Vector3 xzAbsoluteForward = Vector3.Scale(_absoluteTransform.forward, new Vector3(1,0,1));
+
+			Quaternion forwardRotation = Quaternion.LookRotation(xzAbsoluteForward);
+
+			Vector3 relativeMovement = forwardRotation * _input;
+
+			_velocity += relativeMovement * _mass * _acceleration * Time.deltaTime;
+		}
+		
 	}
 
 	void ApplyMovement()
 	{
-		
+		Vector3 displacement = _velocity * Time.deltaTime;
+		_charController.Move(displacement);
+	}
+
+	void ApplyGroundDrag()
+	{
+		if(_charController.isGrounded)
+		{
+			_velocity = _velocity * (1 - Time.deltaTime * _dragGround);
+		}
+	}
+
+	void LimitMaximumRunningSpeed()
+	{
+		Vector3 vely = Vector3.Scale(_velocity, new Vector3(0,1,0));
+		Vector3 velxz = new Vector3(_velocity.x, 0, _velocity.z);
+
+		Vector3 clamped = Vector3.ClampMagnitude(velxz, _maxRunningSpeed);
+
+		_velocity = clamped + vely;
+	}
+
+	void ApplyJump()
+	{
+		if(_jump && _charController.isGrounded)
+		{
+			_velocity += -Physics.gravity.normalized * Mathf.Sqrt(2 * Physics.gravity.magnitude * _jumpHeight);
+			_jump = false;
+		}
 	}
 
 }
